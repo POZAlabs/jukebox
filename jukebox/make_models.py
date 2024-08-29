@@ -35,8 +35,8 @@ def load_checkpoint(path):
                 download(remote_path, local_path)
         restore = local_path
     dist.barrier()
-    device_input = "cuda" if torch.cuda.is_available() else "cpu"
-    checkpoint = torch.load(restore, map_location=torch.device(device_input))
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    checkpoint = torch.load(restore, map_location=torch.device(device))
     print("Restored from {}".format(restore))
     return checkpoint
 
@@ -72,7 +72,7 @@ def restore_opt(opt, shd, checkpoint_path):
     if "step" in checkpoint:
         shd.step(checkpoint['step'])
 
-def make_vqvae(hps, device='cuda'):
+def make_vqvae(hps, device='cuda' if torch.cuda.is_available() else 'cpu'):
     from jukebox.vqvae.vqvae import VQVAE
     block_kwargs = dict(width=hps.width, depth=hps.depth, m_conv=hps.m_conv,
                         dilation_growth_rate=hps.dilation_growth_rate,
@@ -111,7 +111,7 @@ def make_vqvae(hps, device='cuda'):
         freeze_model(vqvae)
     return vqvae
 
-def make_prior(hps, vqvae, device='cuda'):
+def make_prior(hps, vqvae, device='cuda' if torch.cuda.is_available() else 'cpu'):
     from jukebox.prior.prior import SimplePrior
 
     prior_kwargs = dict(input_shape=(hps.n_ctx,), bins=vqvae.l_bins,
@@ -194,8 +194,7 @@ def make_model(model, device, hps, levels=None):
     hps.sample_length = vqvae.sample_length
     if levels is None:
         levels = range(len(priors))
-    device_input = "cuda" if torch.cuda.is_available() else "cpu"
-    priors = [make_prior(setup_hparams(priors[level], dict()), vqvae, device_input) for level in levels]
+    priors = [make_prior(setup_hparams(priors[level], dict()), vqvae, device) for level in levels]
     return vqvae, priors
 
 def save_outputs(model, device, hps):
