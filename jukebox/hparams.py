@@ -8,6 +8,9 @@ class Hyperparams(dict):
     def __setattr__(self, attr, value):
         self[attr] = value
 
+    def __deepcopy__(self):
+        return Hyperparams(**self.__dict__.copy())
+
 def setup_hparams(hparam_set_names, kwargs):
     H = Hyperparams()
     if not isinstance(hparam_set_names, tuple):
