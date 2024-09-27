@@ -10,8 +10,6 @@ def print_once(msg):
 def print_all(msg):
     if (not dist.is_available()):
         print(msg)
-    elif dist.get_rank()%8==0:
-        print(f'{dist.get_rank()//8}: {msg}')
 
 def allgather(x):
     xs = [torch.empty_like(x) for _ in range(dist.get_world_size())]
