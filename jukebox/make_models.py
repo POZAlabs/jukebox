@@ -27,14 +27,12 @@ def load_checkpoint(path):
         remote_path = restore
         cache_dir = os.environ.get('JUKEBOX_CACHE_DIR', '~/.cache')
         local_path = os.path.join(os.path.expanduser(cache_dir), remote_path[len(REMOTE_PREFIX):])
-        if dist.get_rank() % 8 == 0:
-            print("Downloading from azure")
-            if not os.path.exists(os.path.dirname(local_path)):
-                os.makedirs(os.path.dirname(local_path))
-            if not os.path.exists(local_path):
-                download(remote_path, local_path)
+        print("Downloading from azure")
+        if not os.path.exists(os.path.dirname(local_path)):
+            os.makedirs(os.path.dirname(local_path))
+        if not os.path.exists(local_path):
+            download(remote_path, local_path)
         restore = local_path
-    dist.barrier()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     checkpoint = torch.load(restore, map_location=torch.device(device))
     print("Restored from {}".format(restore))
@@ -103,7 +101,7 @@ def make_vqvae(hps, device='cuda' if torch.cuda.is_available() else 'cpu'):
                 num_samples = hps.sample_length
                 downsamples = calculate_strides(hps.strides_t, hps.downs_t)
                 raw_to_tokens = np.prod(downsamples[:level + 1])
-                num_tokens = (num_samples // raw_to_tokens) * dist.get_world_size()
+                num_tokens = (num_samples // raw_to_tokens)
                 bottleneck.restore_k(num_tokens=num_tokens, threshold=hps.revival_threshold)
     else:
         print_all(f"Loading vqvae in eval mode")
@@ -239,7 +237,6 @@ def save_outputs(model, device, hps):
         data[level] = dict(x=x_in, y=y_in, x_out=x_out, preds=preds)
         prior.cpu()
     torch.save(data, 'data.pth.tar')
-    dist.barrier()
     print("Saved data")
     exit()
 
