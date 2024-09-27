@@ -27,11 +27,6 @@ def load_checkpoint(path):
         remote_path = restore
         cache_dir = os.environ.get('JUKEBOX_CACHE_DIR', '~/.cache')
         local_path = os.path.join(os.path.expanduser(cache_dir), remote_path[len(REMOTE_PREFIX):])
-        print("Downloading from azure")
-        if not os.path.exists(os.path.dirname(local_path)):
-            os.makedirs(os.path.dirname(local_path))
-        if not os.path.exists(local_path):
-            download(remote_path, local_path)
         restore = local_path
     device = "cuda" if torch.cuda.is_available() else "cpu"
     checkpoint = torch.load(restore, map_location=torch.device(device))
