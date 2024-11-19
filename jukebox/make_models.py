@@ -21,16 +21,14 @@ MODELS = {
     #'your_model': ("you_vqvae_here", "your_upsampler_here", ..., "you_top_level_prior_here")
 }
 
-def load_checkpoint(path):
-    restore = path
-    if restore.startswith(REMOTE_PREFIX):
-        remote_path = restore
+def load_checkpoint(path:str) -> dict:
+    if path.startswith(REMOTE_PREFIX):
         cache_dir = os.environ.get('JUKEBOX_CACHE_DIR', '~/.cache')
-        local_path = os.path.join(os.path.expanduser(cache_dir), remote_path[len(REMOTE_PREFIX):])
-        restore = local_path
+        local_path = os.path.join(os.path.expanduser(cache_dir), path[len(REMOTE_PREFIX):])
+        path = local_path
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    checkpoint = torch.load(restore, map_location=torch.device(device))
-    print("Restored from {}".format(restore))
+    checkpoint = torch.load(path, map_location=torch.device(device))
+    print("Restored from {}".format(path))
     return checkpoint
 
 def save_checkpoint(logger, name, model, opt, metrics, hps):
@@ -44,17 +42,15 @@ def save_checkpoint(logger, name, model, opt, metrics, hps):
                 **metrics}, f'{logger.logdir}/checkpoint_{name}.pth.tar')
     return
 
-def restore_model(hps, model, checkpoint_path):
+def restore_model(hps, model: torch.nn.Module, checkpoint_path: str) -> None:
     model.step = 0
     if checkpoint_path != '':
         checkpoint = load_checkpoint(checkpoint_path)
-        # checkpoint_hps = Hyperparams(**checkpoint['hps'])
-        # for k in set(checkpoint_hps.keys()).union(set(hps.keys())):
-        #     if checkpoint_hps.get(k, None) != hps.get(k, None):
-        #         print(k, "Checkpoint:", checkpoint_hps.get(k, None), "Ours:", hps.get(k, None))
+        # removes 'module.' from key names if present (due to multi-gpu training)
         checkpoint['model'] = {k[7:] if k[:7] == 'module.' else k: v for k, v in checkpoint['model'].items()}
         model.load_state_dict(checkpoint['model'], strict=False)
-        if 'step' in checkpoint: model.step = checkpoint['step']
+        if 'step' in checkpoint:
+            model.step = checkpoint['step']
 
 def restore_opt(opt, shd, checkpoint_path):
     if not checkpoint_path:
@@ -65,7 +61,7 @@ def restore_opt(opt, shd, checkpoint_path):
     if "step" in checkpoint:
         shd.step(checkpoint['step'])
 
-def make_vqvae(hps, device='cuda' if torch.cuda.is_available() else 'cpu'):
+def make_vqvae(hps: Hyperparams, device='cuda' if torch.cuda.is_available() else 'cpu') -> torch.nn.Module:
     from jukebox.vqvae.vqvae import VQVAE
     block_kwargs = dict(width=hps.width, depth=hps.depth, m_conv=hps.m_conv,
                         dilation_growth_rate=hps.dilation_growth_rate,
@@ -104,7 +100,7 @@ def make_vqvae(hps, device='cuda' if torch.cuda.is_available() else 'cpu'):
         freeze_model(vqvae)
     return vqvae
 
-def make_prior(hps, vqvae, device='cuda' if torch.cuda.is_available() else 'cpu'):
+def make_prior(hps: Hyperparams, vqvae: torch.nn.Module, device='cuda' if torch.cuda.is_available() else 'cpu') -> torch.nn.Module:
     from jukebox.prior.prior import SimplePrior
 
     prior_kwargs = dict(input_shape=(hps.n_ctx,), bins=vqvae.l_bins,
@@ -181,7 +177,7 @@ def make_prior(hps, vqvae, device='cuda' if torch.cuda.is_available() else 'cpu'
         freeze_model(prior)
     return prior
 
-def make_model(model, device, hps, levels=None):
+def make_model(model: str, device='cuda' if torch.cuda.is_available() else 'cpu', hps: Hyperparams = None, levels=None) -> (torch.nn.Module, [torch.nn.Module]):
     vqvae, *priors = MODELS[model]
     vqvae = make_vqvae(setup_hparams(vqvae, dict(sample_length=hps.get('sample_length', 0), sample_length_in_seconds=hps.get('sample_length_in_seconds', 0))), device)
     hps.sample_length = vqvae.sample_length

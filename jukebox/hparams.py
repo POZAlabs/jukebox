@@ -13,7 +13,7 @@ class Hyperparams(dict):
     def __deepcopy__(self, memo):
         return Hyperparams(copy.deepcopy(dict(self)))
 
-def setup_hparams(hparam_set_names, kwargs):
+def setup_hparams(hparam_set_names:str, kwargs) -> Hyperparams:
     H = Hyperparams()
     if not isinstance(hparam_set_names, tuple):
         hparam_set_names = hparam_set_names.split(",")
