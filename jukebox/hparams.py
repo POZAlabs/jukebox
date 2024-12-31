@@ -13,6 +13,12 @@ class Hyperparams(dict):
     def __deepcopy__(self, memo):
         return Hyperparams(copy.deepcopy(dict(self)))
 
+    def __getstate__(self):
+        return dict(self)
+
+    def __setstate__(self, state):
+        self.update(state)
+
 def setup_hparams(hparam_set_names:str, kwargs) -> Hyperparams:
     H = Hyperparams()
     if not isinstance(hparam_set_names, tuple):
