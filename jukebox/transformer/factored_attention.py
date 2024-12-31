@@ -49,8 +49,8 @@ class FactoredAttention(nn.Module):
         else:
             self.c_attn = Conv1D(n_in, n_state * 3, init_scale=init_scale)
         self.c_proj = Conv1D(n_state, n_in, zero_out, init_scale=init_scale)
-        self.attn_dropout = nn.Dropout(attn_dropout) if attn_dropout > 0.0 else lambda x: x
-        self.resid_dropout = nn.Dropout(resid_dropout) if resid_dropout > 0.0 else lambda x: x
+        self.attn_dropout = nn.Dropout(attn_dropout) if attn_dropout > 0.0 else self.identity
+        self.resid_dropout = nn.Dropout(resid_dropout) if resid_dropout > 0.0 else self.identity
 
         # Sequence of length l is factored as [blocks, l // blocks]
         self.attn_func = attn_func
@@ -78,6 +78,9 @@ class FactoredAttention(nn.Module):
         self.prime_len = prime_len
         self.record_attn = False
         self.w = None
+
+    def identity(self, x):
+        return x
 
     def _attn(self, q, k, v, sample):
         scale = 1. / math.sqrt(math.sqrt(self.n_state // self.n_head))
