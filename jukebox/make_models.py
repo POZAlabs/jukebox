@@ -21,12 +21,13 @@ MODELS = {
     #'your_model': ("you_vqvae_here", "your_upsampler_here", ..., "you_top_level_prior_here")
 }
 
-def load_checkpoint(path:str) -> dict:
+def load_checkpoint(path:str, device:str =None) -> dict:
     if path.startswith(REMOTE_PREFIX):
         cache_dir = os.environ.get('JUKEBOX_CACHE_DIR', '~/.cache')
         local_path = os.path.join(os.path.expanduser(cache_dir), path[len(REMOTE_PREFIX):])
         path = local_path
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
     checkpoint = torch.load(path, map_location=torch.device(device))
     print("Restored from {}".format(path))
     return checkpoint
@@ -42,10 +43,10 @@ def save_checkpoint(logger, name, model, opt, metrics, hps):
                 **metrics}, f'{logger.logdir}/checkpoint_{name}.pth.tar')
     return
 
-def restore_model(hps, model: torch.nn.Module, checkpoint_path: str) -> None:
+def restore_model(hps, model: torch.nn.Module, checkpoint_path: str, device:str =None) -> None:
     model.step = 0
     if checkpoint_path != '':
-        checkpoint = load_checkpoint(checkpoint_path)
+        checkpoint = load_checkpoint(checkpoint_path, device)
         # removes 'module.' from key names if present (due to multi-gpu training)
         checkpoint['model'] = {k[7:] if k[:7] == 'module.' else k: v for k, v in checkpoint['model'].items()}
         model.load_state_dict(checkpoint['model'], strict=False)
@@ -55,7 +56,7 @@ def restore_model(hps, model: torch.nn.Module, checkpoint_path: str) -> None:
 def restore_opt(opt, shd, checkpoint_path):
     if not checkpoint_path:
         return
-    checkpoint = load_checkpoint(checkpoint_path)
+    checkpoint = load_checkpoint(checkpoint_path, device)
     if "opt" in checkpoint:
         opt.load_state_dict(checkpoint['opt'])
     if "step" in checkpoint:
@@ -83,7 +84,7 @@ def make_vqvae(hps: Hyperparams, device='cuda' if torch.cuda.is_available() else
                   **block_kwargs)
 
     vqvae = vqvae.to(device)
-    restore_model(hps, vqvae, hps.restore_vqvae)
+    restore_model(hps, vqvae, hps.restore_vqvae, device)
     if hps.train and not hps.prior:
         print_all(f"Loading vqvae in train mode")
         if hps.restore_vqvae != '':
@@ -167,7 +168,7 @@ def make_prior(hps: Hyperparams, vqvae: torch.nn.Module, device='cuda' if torch.
         from jukebox.transformer.ops import _convert_conv_weights_to_fp16
         prior.apply(_convert_conv_weights_to_fp16)
     prior = prior.to(device)
-    restore_model(hps, prior, hps.restore_prior)
+    restore_model(hps, prior, hps.restore_prior, device)
     if hps.train:
         print_all(f"Loading prior in train mode")
         pass
