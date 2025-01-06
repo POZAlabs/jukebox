@@ -225,7 +225,7 @@ def save_samples(model, device, hps, sample_hps):
         metas.extend(metas)
     metas = metas[:hps.n_samples]
 
-    labels = [prior.labeller.get_batch_labels(metas, 'cuda') for prior in priors]
+    labels = [prior.labeller.get_batch_labels(metas) for prior in priors]
     for label in labels:
         assert label['y'].shape[0] == hps.n_samples
 
