@@ -74,7 +74,7 @@ class Labeller():
         assert y.shape == self.label_shape, f"Expected {self.label_shape}, got {y.shape}"
         return y
 
-    def get_batch_labels(self, metas, device=self.device):
+    def get_batch_labels(self, metas):
         ys, infos = [], []
         for meta in metas:
             label = self.get_label(**meta)
@@ -82,7 +82,7 @@ class Labeller():
             ys.append(y)
             infos.append(info)
 
-        ys = t.stack([t.from_numpy(y) for y in ys], dim=0).to(device).long()
+        ys = t.stack([t.from_numpy(y) for y in ys], dim=0).to(self.device).long()
         assert ys.shape[0] == len(metas)
         assert len(infos) == len(metas)
         return dict(y=ys, info=infos)
