@@ -22,15 +22,15 @@ def allreduce(x, op=dist.ReduceOp.SUM):
     dist.all_reduce(x, op=op)
     return x.item()
 
-def allgather_lists(xs):
+def allgather_lists(xs, device='cuda' if torch.cuda.is_available() else 'cpu'):
     bs = len(xs)
     total_bs = dist.get_world_size()*len(xs)
-    lengths = torch.tensor([len(x) for x in xs], dtype=t.long, device='cuda')
+    lengths = torch.tensor([len(x) for x in xs], dtype=t.long, device=device)
     lengths = allgather(lengths)
     assert lengths.shape == (total_bs,)
     max_length = torch.max(lengths).item()
 
-    xs = torch.tensor([[*x, *[0]*(max_length - len(x))] for x in xs], device='cuda')
+    xs = torch.tensor([[*x, *[0]*(max_length - len(x))] for x in xs], device=device)
     assert xs.shape == (bs, max_length), f'Expected {(bs, max_length)}, got {xs.shape}'
     xs = allgather(xs)
     assert xs.shape == (total_bs,max_length), f'Expected {(total_bs, max_length)}, got {xs.shape}'
