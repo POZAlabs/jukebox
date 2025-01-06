@@ -35,7 +35,7 @@ class FilesAudioDataset(Dataset):
         self.durations = [int(durations[i]) for i in keep]
         self.cumsum = np.cumsum(self.durations)
 
-    def init_dataset(self, hps):
+    def init_dataset(self, hps, device=None):
         # Load list of files and starts/durations
         files = librosa.util.find_files(f'{hps.audio_files_dir}', ['mp3', 'opus', 'm4a', 'aac', 'wav'])
         print_all(f"Found {len(files)} files. Getting durations")
@@ -44,7 +44,7 @@ class FilesAudioDataset(Dataset):
         self.filter(files, durations)
 
         if self.labels:
-            self.labeller = Labeller(hps.max_bow_genre_size, hps.n_tokens, self.sample_length, v3=hps.labels_v3)
+            self.labeller = Labeller(hps.max_bow_genre_size, hps.n_tokens, self.sample_length, v3=hps.labels_v3, device=device)
 
     def get_index_offset(self, item):
         # For a given dataset item and shift, return song index and offset within song

@@ -39,7 +39,7 @@ class EmptyLabeller():
         return dict(y=ys, info=infos)
 
 class Labeller():
-    def __init__(self, max_genre_words, n_tokens, sample_length, v3=False, device=device):
+    def __init__(self, max_genre_words, n_tokens, sample_length, v3=False, device=None):
         self.ag_processor = ArtistGenreProcessor(v3)
         self.text_processor = TextProcessor(v3)
         self.n_tokens = n_tokens
@@ -117,6 +117,7 @@ class Labeller():
 
 
 if __name__ == '__main__':
+    device = 'cuda' if t.cuda.is_available() else 'cpu'
     labeller = Labeller(5, 512, 8192*8*4*4, v3=False, device= device)
     label = labeller.get_label("Alan Jackson", "Country Rock", "old town road", 4*60*44100, 0)
     print(label, labeller.describe_label(label['y']))
