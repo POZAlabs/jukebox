@@ -81,6 +81,7 @@ def make_vqvae(hps: Hyperparams, device='cuda' if torch.cuda.is_available() else
                   mu=hps.l_mu, commit=hps.commit,
                   spectral=hps.spectral, multispectral=hps.multispectral,
                   multipliers=hps.hvqvae_multipliers, use_bottleneck=hps.use_bottleneck,
+                  device=device,
                   **block_kwargs)
 
     vqvae = vqvae.to(device)
@@ -158,7 +159,9 @@ def make_prior(hps: Hyperparams, vqvae: torch.nn.Module, device='cuda' if torch.
                         copy_input=hps.copy_input,
                         labels_v3=hps.labels_v3,
                         merged_decoder=hps.merged_decoder,
-                        single_enc_dec=hps.single_enc_dec)
+                        single_enc_dec=hps.single_enc_dec,
+                        device=device,
+                        )
 
     prior.alignment_head = hps.get('alignment_head', None)
     prior.alignment_layer = hps.get('alignment_layer', None)
