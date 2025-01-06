@@ -42,7 +42,7 @@ def _loss_fn(loss_fn, x_target, x_pred, hps):
 class VQVAE(nn.Module):
     def __init__(self, input_shape, levels, downs_t, strides_t,
                  emb_width, l_bins, mu, commit, spectral, multispectral,
-                 multipliers=None, use_bottleneck=True, **block_kwargs):
+                 multipliers=None, use_bottleneck=True,device=None, **block_kwargs):
         super().__init__()
 
         self.sample_length = input_shape[0]
@@ -53,6 +53,7 @@ class VQVAE(nn.Module):
         self.hop_lengths = np.cumprod(self.downsamples)
         self.z_shapes = z_shapes = [(x_shape[0] // self.hop_lengths[level],) for level in range(levels)]
         self.levels = levels
+        self.device = device
 
         if multipliers is None:
             self.multipliers = [1] * levels
@@ -144,7 +145,7 @@ class VQVAE(nn.Module):
         return zs
 
     def sample(self, n_samples):
-        zs = [t.randint(0, self.l_bins, size=(n_samples, *z_shape), device='cuda') for z_shape in self.z_shapes]
+        zs = [t.randint(0, self.l_bins, size=(n_samples, *z_shape), device=self.device) for z_shape in self.z_shapes]
         return self.decode(zs)
 
     def forward(self, x, hps, loss_fn='l1'):

@@ -121,9 +121,9 @@ def _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps):
     return zs
 
 # Generate ancestral samples given a list of artists and genres
-def ancestral_sample(labels, sampling_kwargs, priors, hps):
+def ancestral_sample(labels, sampling_kwargs, priors, hps, device):
     sample_levels = list(range(len(priors)))
-    zs = [t.zeros(hps.n_samples,0,dtype=t.long, device='cuda') for _ in range(len(priors))]
+    zs = [t.zeros(hps.n_samples,0,dtype=t.long, device=device) for _ in range(len(priors))]
     zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
@@ -242,7 +242,7 @@ def save_samples(model, device, hps, sample_hps):
                        dict(temp=0.99, fp16=True, chunk_size=chunk_size, max_batch_size=max_batch_size)]
 
     if sample_hps.mode == 'ancestral':
-        ancestral_sample(labels, sampling_kwargs, priors, hps)
+        ancestral_sample(labels, sampling_kwargs, priors, hps, device)
     elif sample_hps.mode in ['continue', 'upsample']:
         assert sample_hps.codes_file is not None
         top_raw_to_tokens = priors[-1].raw_to_tokens

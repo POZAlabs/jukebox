@@ -28,9 +28,9 @@ class SimplePrior(nn.Module):
     def __init__(self, z_shapes, l_bins, encoder, decoder, level,
                  downs_t, strides_t, labels, prior_kwargs, x_cond_kwargs, y_cond_kwargs,
                  prime_kwargs, copy_input, labels_v3=False,
-                 merged_decoder=False, single_enc_dec=False):
+                 merged_decoder=False, single_enc_dec=False, device=None):
         super().__init__()
-
+        self.device = device
         self.use_tokens = prime_kwargs.pop('use_tokens')
         self.n_tokens = prime_kwargs.pop('n_tokens')
         self.prime_loss_fraction = prime_kwargs.pop('prime_loss_fraction')
@@ -75,7 +75,7 @@ class SimplePrior(nn.Module):
         # Y conditioning
         if self.y_cond:
             self.n_time = self.z_shape[0] # Assuming STFT=TF order and raw=T1 order, so T is first dim
-            self.y_emb = LabelConditioner(n_time=self.n_time,include_time_signal=not self.x_cond,**y_cond_kwargs)
+            self.y_emb = LabelConditioner(n_time=self.n_time,include_time_signal=not self.x_cond,**y_cond_kwargs, device=device)
 
         # Lyric conditioning
         if single_enc_dec:
@@ -130,7 +130,7 @@ class SimplePrior(nn.Module):
         self.sample_length = self.n_ctx*self.raw_to_tokens
         if labels:
             self.labels_v3 = labels_v3
-            self.labeller = Labeller(self.y_emb.max_bow_genre_size, self.n_tokens, self.sample_length, v3=self.labels_v3)
+            self.labeller = Labeller(self.y_emb.max_bow_genre_size, self.n_tokens, self.sample_length, v3=self.labels_v3, device = device)
         else:
             self.labeller = EmptyLabeller()
 
@@ -180,7 +180,7 @@ class SimplePrior(nn.Module):
             if cond is not None:
                 assert_shape(cond, (N, dims, self.prior_width))
             else:
-                conds[i] = t.zeros((N, dims, self.prior_width), dtype=t.float, device='cuda')
+                conds[i] = t.zeros((N, dims, self.prior_width), dtype=t.float, device=self.device)
 
         return t.cat(xs, dim=1), t.cat(conds, dim=1)
 
@@ -306,7 +306,7 @@ class SimplePrior(nn.Module):
             encoder_kv = self.prime_x_out(encoder_kv)
             prime_loss = nn.functional.cross_entropy(encoder_kv.view(-1, self.prime_bins), prime_t.view(-1)) / np.log(2.)
         else:
-            prime_loss = t.tensor(0.0, device='cuda')
+            prime_loss = t.tensor(0.0, device=self.device)
         return prime_loss
 
     def z_forward(self, z, z_conds=[], y=None, fp16=False, get_preds=False, get_attn_weights=False):
