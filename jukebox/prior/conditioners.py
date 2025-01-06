@@ -76,7 +76,7 @@ class RangeEmbedding(nn.Module):
     # [start,end) mapped to [0,1,...,bins-1]
     # [start,end) -> [0,1) -> [0, bins) -> floor -> [0,...,bins-1]
     # NOTE: Open ended interval on right, so start <= pos < end, not <= end
-    def __init__(self, n_time, bins, range, out_width, init_scale, clamp=False):
+    def __init__(self, n_time, bins, range, out_width, init_scale, clamp=False, device=None):
         super().__init__()
         self.n_time = n_time
         self.bins = bins
@@ -84,6 +84,7 @@ class RangeEmbedding(nn.Module):
         nn.init.normal_(self.emb.weight, std=0.01 * init_scale)
         self.pos_min, self.pos_max = range
         self.clamp = clamp
+        self.device= device
 
     def forward(self, pos_start, pos_end=None):
         # Check if [pos_start,pos_end] in [pos_min, pos_max)
@@ -100,7 +101,7 @@ class RangeEmbedding(nn.Module):
         n_time = self.n_time
         if n_time != 1:
             assert pos_end is not None
-            interpolation  = (t.arange(0, n_time, dtype=t.float, device='cuda').view(1,n_time)/n_time)
+            interpolation  = (t.arange(0, n_time, dtype=t.float, device=self.device).view(1,n_time)/n_time)
             position = pos_start + (pos_end - pos_start)*interpolation
         else:
             position = pos_start
@@ -111,7 +112,7 @@ class RangeEmbedding(nn.Module):
         return self.emb(bins)
 
 class LabelConditioner(nn.Module):
-    def __init__(self, y_bins, t_bins, sr, min_duration, max_duration, n_time, out_width, init_scale, max_bow_genre_size, include_time_signal):
+    def __init__(self, y_bins, t_bins, sr, min_duration, max_duration, n_time, out_width, init_scale, max_bow_genre_size, include_time_signal, device=None):
         super().__init__()
         self.n_time = n_time
         self.out_width = out_width
@@ -127,9 +128,9 @@ class LabelConditioner(nn.Module):
                         (0.0, 1.0))                              # Relative pos
             assert len(t_ranges) == 3, f"Expecting (total, absolute, relative) ranges, got {t_ranges}"
             total_length_range, absolute_pos_range, relative_pos_range = t_ranges
-            self.total_length_emb = RangeEmbedding(1, t_bins, total_length_range, out_width, init_scale)
-            self.absolute_pos_emb = RangeEmbedding(n_time, t_bins, absolute_pos_range, out_width, init_scale)
-            self.relative_pos_emb = RangeEmbedding(n_time, t_bins, relative_pos_range, out_width, init_scale, clamp=True)
+            self.total_length_emb = RangeEmbedding(1, t_bins, total_length_range, out_width, init_scale, device=device)
+            self.absolute_pos_emb = RangeEmbedding(n_time, t_bins, absolute_pos_range, out_width, init_scale, device=device)
+            self.relative_pos_emb = RangeEmbedding(n_time, t_bins, relative_pos_range, out_width, init_scale, clamp=True, device=device)
 
     def forward(self, y):
         assert len(y.shape) == 2, f"Expected shape with 2 dims, got {y.shape}"
