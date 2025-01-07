@@ -135,7 +135,7 @@ class LabelConditioner(nn.Module):
     def forward(self, y):
         assert len(y.shape) == 2, f"Expected shape with 2 dims, got {y.shape}"
         assert y.shape[-1] == 4 + self.max_bow_genre_size, f"Expected shape (N,{4 + self.max_bow_genre_size}), got {y.shape}"
-        assert y.dtype == torch.long, f"Expected dtype torch.long, got {y.dtype}"
+        assert y.dtype == t.long, f"Expected dtype torch.long, got {y.dtype}"
         y = y.to(self.bow_genre_emb.emb.weight.device)
 
         N = y.shape[0]
