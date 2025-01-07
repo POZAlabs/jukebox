@@ -35,7 +35,7 @@ class FilesAudioDataset(Dataset):
         self.durations = [int(durations[i]) for i in keep]
         self.cumsum = np.cumsum(self.durations)
 
-    def init_dataset(self, hps, device=None):
+    def init_dataset(self, hps, device='cuda' if dist.is_available() else 'cpu'):
         # Load list of files and starts/durations
         files = librosa.util.find_files(f'{hps.audio_files_dir}', ['mp3', 'opus', 'm4a', 'aac', 'wav'])
         print_all(f"Found {len(files)} files. Getting durations")

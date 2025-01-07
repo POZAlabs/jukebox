@@ -28,7 +28,8 @@ class SimplePrior(nn.Module):
     def __init__(self, z_shapes, l_bins, encoder, decoder, level,
                  downs_t, strides_t, labels, prior_kwargs, x_cond_kwargs, y_cond_kwargs,
                  prime_kwargs, copy_input, labels_v3=False,
-                 merged_decoder=False, single_enc_dec=False, device=None):
+                 merged_decoder=False, single_enc_dec=False, device="cuda" if t.cuda.is_available() else "cpu"):
+
         super().__init__()
         self.device = device
         self.use_tokens = prime_kwargs.pop('use_tokens')

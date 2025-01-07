@@ -76,7 +76,7 @@ class RangeEmbedding(nn.Module):
     # [start,end) mapped to [0,1,...,bins-1]
     # [start,end) -> [0,1) -> [0, bins) -> floor -> [0,...,bins-1]
     # NOTE: Open ended interval on right, so start <= pos < end, not <= end
-    def __init__(self, n_time, bins, range, out_width, init_scale, clamp=False, device=None):
+    def __init__(self, n_time, bins, range, out_width, init_scale, clamp=False, device="cuda" if t.cuda.is_available() else "cpu"):
         super().__init__()
         self.n_time = n_time
         self.bins = bins
@@ -112,7 +112,7 @@ class RangeEmbedding(nn.Module):
         return self.emb(bins)
 
 class LabelConditioner(nn.Module):
-    def __init__(self, y_bins, t_bins, sr, min_duration, max_duration, n_time, out_width, init_scale, max_bow_genre_size, include_time_signal, device=None):
+    def __init__(self, y_bins, t_bins, sr, min_duration, max_duration, n_time, out_width, init_scale, max_bow_genre_size, include_time_signal, device="cuda" if t.cuda.is_available() else "cpu"):
         super().__init__()
         self.n_time = n_time
         self.out_width = out_width

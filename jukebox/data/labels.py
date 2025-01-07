@@ -39,7 +39,7 @@ class EmptyLabeller():
         return dict(y=ys, info=infos)
 
 class Labeller():
-    def __init__(self, max_genre_words, n_tokens, sample_length, v3=False, device=None):
+    def __init__(self, max_genre_words, n_tokens, sample_length, v3=False, device="cuda" if t.cuda.is_available() else "cpu"):
         self.ag_processor = ArtistGenreProcessor(v3)
         self.text_processor = TextProcessor(v3)
         self.n_tokens = n_tokens

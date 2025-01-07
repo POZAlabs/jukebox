@@ -21,13 +21,11 @@ MODELS = {
     #'your_model': ("you_vqvae_here", "your_upsampler_here", ..., "you_top_level_prior_here")
 }
 
-def load_checkpoint(path:str, device:str =None) -> dict:
+def load_checkpoint(path:str, device:str ="cuda" if torch.cuda.is_available() else "cpu"):
     if path.startswith(REMOTE_PREFIX):
         cache_dir = os.environ.get('JUKEBOX_CACHE_DIR', '~/.cache')
         local_path = os.path.join(os.path.expanduser(cache_dir), path[len(REMOTE_PREFIX):])
         path = local_path
-    if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
     checkpoint = torch.load(path, map_location=torch.device(device))
     print("Restored from {}".format(path))
     return checkpoint
@@ -43,7 +41,7 @@ def save_checkpoint(logger, name, model, opt, metrics, hps):
                 **metrics}, f'{logger.logdir}/checkpoint_{name}.pth.tar')
     return
 
-def restore_model(hps, model: torch.nn.Module, checkpoint_path: str, device:str =None) -> None:
+def restore_model(hps, model: torch.nn.Module, checkpoint_path: str, device:str = "cuda" if torch.cuda.is_available() else "cpu") -> None:
     model.step = 0
     if checkpoint_path != '':
         checkpoint = load_checkpoint(checkpoint_path, device)
